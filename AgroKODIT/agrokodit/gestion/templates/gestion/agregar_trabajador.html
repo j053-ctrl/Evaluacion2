@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% if editando %}Editar{% else %}Agregar{% endif %} Trabajador - AgroKODIT</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+</head>
+
+<body>
+
+{% include 'gestion/navbar.html' %}
+
+<div class="container mt-5">
+
+    <h1>{% if edicion_solo_codigos %}Editar códigos del trabajador{% elif editando %}Editar{% else %}Agregar{% endif %}{% if not edicion_solo_codigos %} trabajador{% endif %}</h1>
+
+    {% if error %}
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+
+    {% csrf_token %}
+
+    {% if not edicion_solo_codigos %}
+    <div class="mb-3">
+        <label class="form-label">RUT</label>
+        <input type="text" name="rut" class="form-control" value="{{ trabajador.rut|default:'' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Nombre</label>
+        <input type="text" name="nombre" class="form-control" value="{{ trabajador.nombre|default:'' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Apellido</label>
+        <input type="text" name="apellido" class="form-control" value="{{ trabajador.apellido|default:'' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Rol</label>
+
+        <select name="rol" class="form-select" required>
+            <option value="Trabajador" {% if trabajador.rol == 'Trabajador' %}selected{% endif %}>Trabajador</option>
+            <option value="Jefe de Cuadrilla" {% if trabajador.rol == 'Jefe de Cuadrilla' %}selected{% endif %}>Jefe de Cuadrilla</option>
+            <option value="Recursos Humanos" {% if trabajador.rol == 'Recursos Humanos' %}selected{% endif %}>Recursos Humanos</option>
+            <option value="Gerencia" {% if trabajador.rol == 'Gerencia' %}selected{% endif %}>Gerencia</option>
+            <option value="Planillera" {% if trabajador.rol == 'Planillera' %}selected{% endif %}>Planillera</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="ganancia_dia">Ganancia del día</label>
+        <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input type="number" id="ganancia_dia" name="ganancia_dia" class="form-control"
+                   value="{{ trabajador.ganancia_dia|default:0 }}" min="0" step="1" required>
+        </div>
+        <div class="form-text">Monto ganado por el trabajador durante el día, en pesos chilenos.</div>
+    </div>
+
+    <p class="text-muted">El rol laboral no cambia los permisos de acceso. Configura la cuenta desde Perfiles y asignaciones.</p>
+
+    {% endif %}
+
+    <div class="mb-3">
+        <label class="form-label" for="cuadrilla_id">Código de cuadrilla</label>
+        <input type="text" id="cuadrilla_id" name="cuadrilla_id" class="form-control"
+               value="{{ trabajador.cuadrilla_id|default:'' }}" maxlength="100">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="collera_id">Código de collera</label>
+        <input type="text" id="collera_id" name="collera_id" class="form-control"
+               value="{{ trabajador.collera_id|default:'' }}" maxlength="100">
+    </div>
+
+    {% if not edicion_solo_codigos %}
+    {% if password_form %}
+    <fieldset class="border rounded p-3 mb-4">
+        <legend class="float-none w-auto px-2 fs-5">Cambiar contraseña</legend>
+        <p class="text-muted">Deja ambos campos vacíos para conservar la contraseña actual.</p>
+        {% for field in password_form %}
+        <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            <button type="button" class="btn btn-outline-success btn-sm mt-2" data-password-toggle aria-controls="{{ field.id_for_label }}" aria-pressed="false">Mostrar contraseña</button>
+            {% for error in field.errors %}<div class="text-danger" role="alert">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+    </fieldset>
+    {% elif request.user.is_superuser %}
+    <p class="text-muted">Este trabajador no tiene una cuenta de acceso vinculada.</p>
+    {% endif %}
+    {% endif %}
+
+    <button type="submit" class="btn btn-success">
+        {% if edicion_solo_codigos %}Guardar códigos{% else %}Guardar trabajador{% endif %}
+    </button>
+
+    <a href="{% url 'trabajadores' %}" class="btn btn-secondary">
+        Cancelar
+    </a>
+
+</form>
+
+</div>
+
+{% include 'gestion/password_toggle.html' %}
+<script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

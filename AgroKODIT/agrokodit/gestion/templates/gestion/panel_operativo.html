@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi panel - AgroKODIT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+{% include 'gestion/navbar.html' %}
+<main class="container py-5">
+    <h1>{% if rol == 'jefe' %}Panel del jefe de cuadrilla{% elif rol == 'recursos_humanos' %}Panel de Recursos Humanos{% elif rol == 'cuenta_plenillera' %}Panel de Planillera{% elif rol == 'gerencia' %}Panel de Gerencia{% else %}Panel del trabajador{% endif %}</h1>
+    <p>Bienvenido, {{ request.user.username }}.</p>
+    {% if rol == 'jefe' or rol == 'cuenta_plenillera' %}
+    <p>{% if rol == 'cuenta_plenillera' %}Ingresa con tu RUT y contraseña. Registra tu asistencia seleccionando tu nombre, o la de los trabajadores, y la cosecha del día en kilos, capachos y bines. Identifica los bines entregados con hojas.{% else %}Consulta únicamente el personal de la cuadrilla que tienes a cargo.{% endif %}</p>
+    {% else %}
+    <p>Tu información personal es de solo lectura y está vinculada a tu cuenta.</p>
+    {% endif %}
+    {% if not perfil %}<div class="alert alert-info">Tu cuenta aún no tiene un perfil asignado. Contacta al administrador para vincular tus datos.</div>{% endif %}
+    <div class="row g-3">
+        <div class="col-md-6"><div class="card h-100"><div class="card-body">
+            <h2 class="h5">{% if rol == 'jefe' or rol == 'cuenta_plenillera' %}Trabajadores{% else %}Mis datos{% endif %}</h2>
+            <p>{% if rol == 'jefe' or rol == 'cuenta_plenillera' %}Personal registrado y su ganancia del día.{% else %}Tu ficha de trabajador.{% endif %}</p>
+            <a class="btn btn-success" href="{% url 'trabajadores' %}">Consultar</a>
+        </div></div></div>
+        <div class="col-md-6"><div class="card h-100"><div class="card-body">
+            <h2 class="h5">{% if rol == 'jefe' or rol == 'cuenta_plenillera' %}Jornadas y producción{% else %}Mi jornada y producción{% endif %}</h2>
+            <p>Asistencia, labores y cosecha.</p>
+            <a class="btn btn-success" href="{% url 'jornadas' %}">{% if rol == 'jefe' or rol == 'cuenta_plenillera' %}Registrar y consultar{% else %}Consultar{% endif %}</a>
+        </div></div></div>
+    </div>
+    {% if rol == 'cuenta_plenillera' %}<a class="btn btn-success mt-3" href="{% url 'reportes' %}">Consultar reportes</a>{% endif %}
+</main>
+<script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

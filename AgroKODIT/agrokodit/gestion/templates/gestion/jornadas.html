@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jornadas - AgroKODIT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'agrokodit/css/estilos.css' %}">
+</head>
+<body class="bg-light">
+{% include 'gestion/navbar.html' %}
+<main class="container-fluid px-lg-5 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div><h1 class="mb-1">Jornadas y producción</h1><p class="text-muted mb-0">Asistencia, asignación, cosecha y cierre diario.</p></div>
+        <a class="btn btn-outline-secondary" href="{% url 'inicio' %}">Volver al inicio</a>
+    </div>
+    {% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+    <section class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted">Registros</div><div class="fs-3 fw-semibold">{{ resumen.registros }}</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted">Kilos</div><div class="fs-3 fw-semibold">{{ resumen.kilos|floatformat:2 }}</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted">Horas</div><div class="fs-3 fw-semibold">{{ resumen.horas|floatformat:2 }}</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted">Pérdidas kg</div><div class="fs-3 fw-semibold">{{ resumen.perdidas|floatformat:2 }}</div></div></div></div>
+    </section>
+    <p class="text-muted">Total del período: {{ resumen.capachos }} capachos · {{ resumen.bines }} bines.</p>
+    <form method="get" class="card card-body mb-4"><div class="row g-3 align-items-end">
+        <div class="col-md-4"><label class="form-label" for="desde">Desde</label><input class="form-control" type="date" id="desde" name="desde" value="{{ desde }}"></div>
+        <div class="col-md-4"><label class="form-label" for="hasta">Hasta</label><input class="form-control" type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
+        <div class="col-md-4"><button class="btn btn-success" type="submit">Aplicar filtro</button> <a class="btn btn-outline-secondary" href="{% url 'jornadas' %}">Limpiar</a></div>
+    </div></form>
+    <div class="row g-4">
+        {% if puede_gestionar %}<section class="col-xl-4"><div class="card shadow-sm"><div class="card-body">
+            <h2 class="h5">Registrar jornada</h2>
+            <form method="post" novalidate>{% csrf_token %}
+                {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                {% for field in form %}<div class="mb-3">{{ field.label_tag }}{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+                <button class="btn btn-success" type="submit">Guardar jornada</button>
+            </form>
+        </div></div></section>{% endif %}
+        <section class="{% if puede_gestionar %}col-xl-8{% else %}col-12{% endif %}">
+            <div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Fecha</th><th>Trabajador</th><th>Asignación</th><th>Asistencia</th><th>Horario</th><th>Producción</th><th>Calidad</th><th>Cierre</th>{% if puede_gestionar %}<th>Acciones</th>{% endif %}</tr></thead>
+                <tbody>{% for registro in registros %}<tr>
+                    <td>{{ registro.fecha }}</td><td>{{ registro.trabajador_nombre }}<div class="small text-muted">{{ registro.collera_id|default:'Sin collera' }}</div></td>
+                    <td>{{ registro.cuartel_codigo }} · {{ registro.labor }}<div class="small text-muted">{{ registro.cuadrilla_id }}</div></td>
+                    <td>{{ registro.asistencia }}</td><td>{{ registro.hora_entrada|default:'—' }}–{{ registro.hora_salida|default:'—' }}<div class="small text-muted">{{ registro.horas_trabajadas|floatformat:2 }} h</div></td>
+                    <td>{{ registro.kilos|floatformat:2 }} kg<div>{{ registro.capachos|default:0 }} capachos · {{ registro.bines|default:0 }} bines</div><div class="small">{% if registro.bines_con_hojas %}Bines con hojas: {{ registro.bines_con_hojas|join:", " }}{% else %}Sin bines con hojas registrados{% endif %}</div><div class="small text-danger">Pérdidas: {{ registro.perdidas_kg|floatformat:2 }} kg</div></td><td>{{ registro.calidad }}</td>
+                    <td>{% if registro.validado %}<span class="badge bg-success">Validada</span>{% else %}<span class="badge bg-warning text-dark">Pendiente</span>{% endif %}</td>
+                    {% if puede_gestionar %}<td class="text-nowrap">{% if not registro.validado %}<form class="d-inline" method="post" action="{% url 'validar_jornada' registro.id %}">{% csrf_token %}<button class="btn btn-sm btn-success" type="submit">Validar</button></form>{% endif %}
+                    <form class="d-inline" method="post" action="{% url 'eliminar_jornada' registro.id %}">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="¿Eliminar esta jornada?">Eliminar</button></form></td>{% endif %}
+                </tr>{% empty %}<tr><td colspan="9" class="text-center text-muted py-4">No hay jornadas para el período seleccionado.</td></tr>{% endfor %}</tbody>
+            </table></div></div>
+            {% if resumen_collera %}<div class="card shadow-sm mt-4"><div class="card-body"><h2 class="h5">Producción de mi collera</h2><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Fecha</th><th>Kilos</th><th>Pérdidas</th></tr></thead><tbody>{% for fila in resumen_collera %}<tr><td>{{ fila.fecha }}</td><td>{{ fila.kilos|floatformat:2 }} kg</td><td>{{ fila.perdidas|floatformat:2 }} kg</td></tr>{% endfor %}</tbody></table></div></div></div>{% endif %}
+        </section>
+    </div>
+</main>
+    <script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

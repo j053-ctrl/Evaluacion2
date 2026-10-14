@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html data-page="login" lang="es">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión - AgroKODIT</title>
+    
+    <link rel="stylesheet" href="{% static 'agrokodit/css/estilos.css' %}">
+</head>
+<body>
+    <main>
+        <p class="marca">AgroKODIT</p>
+        <h1>Iniciar sesión</h1>
+        <p class="descripcion">Ingresa a tu sistema de gestión agrícola.</p>
+        {% if form.errors %}
+        <p id="login-error" class="error" role="alert">No pudimos iniciar sesión. Revisa tu RUT y contraseña.</p>
+        {% endif %}
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <label for="username">RUT</label>
+            <input id="username" name="username" type="text" value="{{ form.username.value|default:'' }}" placeholder="12345678-5" autocomplete="username" maxlength="150" required autofocus {% if form.errors %}aria-describedby="login-error" aria-invalid="true"{% endif %}>
+            <label for="password">Contraseña</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required {% if form.errors %}aria-describedby="login-error" aria-invalid="true"{% endif %}>
+            <button type="button" class="password-toggle" data-password-toggle aria-controls="password" aria-pressed="false">Mostrar contraseña</button>
+            <button type="submit">Ingresar</button>
+        </form>
+        <a class="recuperar" href="{% url 'recuperar_cuenta' %}">Recuperar tu cuenta</a>
+        <p class="ayuda">Si necesitas una cuenta, contacta al administrador.</p>
+    </main>
+    {% include 'gestion/password_toggle.html' %}
+    <script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

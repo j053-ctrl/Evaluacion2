@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AgroKODIT</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+</head>
+
+<body>
+
+{% include 'gestion/navbar.html' %}
+
+<div class="container mt-5">
+
+    <h1>{% if request.user.is_superuser %}Panel de Administración{% else %}Panel del trabajador{% endif %}</h1>
+
+    <p>Bienvenido al sistema de gestión agrícola AgroKODIT.</p>
+    {% if not request.user.is_superuser %}
+    <p class="alert alert-info">Puedes consultar la información. Solo el administrador puede agregar, editar o eliminar datos.</p>
+    {% endif %}
+
+    <div class="row mt-4">
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Administradores</h5>
+                    <p>Cuentas administrativas guardadas por separado en MongoDB Atlas.</p>
+                    <a href="{% url 'administradores' %}" class="btn btn-success">Administrar cuentas</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Trabajadores</h5>
+            <p>{% if request.user.is_superuser %}Administrar{% else %}Consultar{% endif %} trabajadores.</p>
+
+            <a href="{% url 'trabajadores' %}" class="btn btn-success">
+                Ingresar
+            </a>
+
+        </div>
+    </div>
+</div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Predios</h5>
+                    <p>{% if request.user.is_superuser %}Administrar{% else %}Consultar{% endif %} predios agrícolas.</p>
+                    <a href="{% url 'predios' %}" class="btn btn-success">
+                        Ingresar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Huertos</h5>
+                    <p>{% if request.user.is_superuser %}Administrar{% else %}Consultar{% endif %} huertos.</p>
+                    <a href="{% url 'huertos' %}" class="btn btn-success">
+                        Ingresar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Cuarteles</h5>
+                    <p>{% if request.user.is_superuser %}Administrar{% else %}Consultar{% endif %} cuarteles.</p>
+                    <a href="{% url 'cuarteles' %}" class="btn btn-success">
+                        Ingresar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Cuadrillas</h5>
+                    <p>{% if request.user.is_superuser %}Administrar{% else %}Consultar{% endif %} cuadrillas.</p>
+                    <a href="{% url 'cuadrillas' %}" class="btn btn-success">
+                        Ingresar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Administrador de reportes</h5>
+                    <p>Visualizar producción y rendimiento.</p>
+                    <a href="{% url 'reportes' %}" class="btn btn-success">
+                        Ver reportes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card"><div class="card-body">
+                <h5 class="card-title">Colleras</h5>
+                <p>Formar parejas de trabajadores dentro de cada cuadrilla.</p>
+                <a href="{% url 'colleras' %}" class="btn btn-success">Administrar</a>
+            </div></div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card"><div class="card-body">
+                <h5 class="card-title">Jornadas y producción</h5>
+                <p>Registrar asistencia, labores, kilos, calidad y pérdidas.</p>
+                <a href="{% url 'jornadas' %}" class="btn btn-success">Ingresar</a>
+            </div></div>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

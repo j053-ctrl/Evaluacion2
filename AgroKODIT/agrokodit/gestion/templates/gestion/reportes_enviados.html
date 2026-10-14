@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Planillera - AgroKODIT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'agrokodit/css/estilos.css' %}" rel="stylesheet">
+</head>
+<body class="bg-light">
+{% include 'gestion/navbar.html' %}
+<main class="container py-4">
+    <h1>Reportes de Planillera</h1>
+    <p>Planillera prepara y envía el reporte. El administrador lo revisa y publica para que aparezca en el sistema.</p>
+    {% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}
+    {% if puede_editar %}
+    <section class="card card-body mb-4">
+        <h2 class="h5">{% if reporte %}Editar reporte{% else %}Nuevo reporte{% endif %}</h2>
+        {% if reporte.comentario_admin %}<p class="alert alert-info">Observación del administrador: {{ reporte.comentario_admin }}</p>{% endif %}
+        <form method="post">{% csrf_token %}
+            {% if reporte %}<input type="hidden" name="id" value="{{ reporte.id|default:request.GET.editar }}">{% endif %}
+            {{ form.as_p }}
+            <button name="accion" value="guardar" class="btn btn-outline-success">Guardar borrador</button>
+            <button name="accion" value="enviar" class="btn btn-success">Enviar al administrador</button>
+        </form>
+    </section>
+    {% endif %}
+    {% if reporte and not puede_editar %}
+    <section class="card card-body mb-4">
+        <h2 class="h5">{{ reporte.titulo }}</h2><p>{{ reporte.fecha }} · {{ reporte.autor }} · {{ reporte.estado }}</p>
+        <div>{{ reporte.contenido|linebreaksbr }}</div>
+        {% if es_admin and reporte.estado == 'enviado' %}
+        <form method="post" class="mt-3">{% csrf_token %}<input type="hidden" name="id" value="{{ request.GET.editar }}">
+            <label for="comentario-admin" class="form-label">Observación para Planillera</label>
+            <textarea name="comentario_admin" id="comentario-admin" class="form-control mb-3" maxlength="2000"></textarea>
+            <button name="accion" value="publicar" class="btn btn-success">Publicar reporte</button>
+            <button name="accion" value="devolver" class="btn btn-outline-secondary">Devolver para corregir</button>
+        </form>{% endif %}
+    </section>{% endif %}
+    {% if es_admin or es_planillera %}
+    <h2 class="h4">{% if es_admin %}Bandeja del administrador{% else %}Mis reportes y publicaciones{% endif %}</h2>
+    {% if es_admin %}
+    <form method="post" class="mb-3">{% csrf_token %}
+        <p>Los reportes ya están guardados en la base de datos. Este botón publica todos los enviados y registra tu aprobación en MongoDB.</p>
+        <button name="accion" value="publicar_todos" class="btn btn-success" data-confirm="¿Publicar todos los reportes enviados?">Publicar todos los enviados</button>
+    </form>
+    {% endif %}
+    {% if es_planillera %}<a href="{% url 'reportes_enviados' %}" class="btn btn-outline-success mb-3">Nuevo reporte</a>{% endif %}
+    <div class="table-responsive"><table class="table"><thead><tr><th>Fecha</th><th>Título</th><th>Autor</th><th>Estado</th><th></th></tr></thead>
+    <tbody>{% for fila in registros %}<tr><td>{{ fila.fecha }}</td><td>{{ fila.titulo }}</td><td>{{ fila.autor }}</td><td>{{ fila.estado }}</td><td>{% if es_admin or fila.autor == request.user.username %}<a href="?editar={{ fila.id }}">Abrir</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="5">No hay reportes.</td></tr>{% endfor %}</tbody></table></div>
+    {% endif %}
+    <h2 class="h4 mt-4">Reportes publicados por el administrador</h2>
+    {% for fila in publicados %}<article class="card card-body mb-3"><h3 class="h5">{{ fila.titulo }}</h3><p>{{ fila.fecha }} · Publicado por {{ fila.revisado_por }}</p><div>{{ fila.contenido|linebreaksbr }}</div></article>{% empty %}<p>Aún no hay reportes publicados.</p>{% endfor %}
+    <a href="{% url 'inicio' %}" class="btn btn-outline-secondary">Volver al inicio</a>
+</main>
+<script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

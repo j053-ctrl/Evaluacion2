@@ -1,0 +1,152 @@
+{% load static %}
+<!DOCTYPE html>
+<html data-page="cuadrillas" lang="es">
+
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuadrillas - AgroKODIT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'agrokodit/css/estilos.css' %}">
+</head>
+
+<body>
+    {% include 'gestion/navbar.html' %}
+
+    <main class="container-fluid px-3 px-lg-5 py-5">
+        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-end gap-3 mb-4">
+            <div class="page-heading">
+                <span class="badge text-bg-success mb-2">Organización de personal</span>
+                <h1 class="mb-2">Gestión de cuadrillas</h1>
+                <p class="text-secondary mb-0">Forma equipos de trabajo, asigna su jefatura, labor, turno y ubicación dentro de la estructura agrícola.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'trabajadores' %}" class="btn btn-outline-success">Administrar trabajadores</a>
+                <a href="{% url 'inicio' %}" class="btn btn-outline-secondary">Volver al inicio</a>
+            </div>
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endfor %}
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Cuadrillas mostradas</div>
+                <div class="metric-value">{{ total_cuadrillas }}</div>
+            </div></div></div>
+            <div class="col-12 col-md-4"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Cuadrillas activas</div>
+                <div class="metric-value">{{ cuadrillas_activas }}</div>
+            </div></div></div>
+            <div class="col-12 col-md-4"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Personas asignadas</div>
+                <div class="metric-value">{{ personal_asignado }}</div>
+            </div></div></div>
+        </div>
+
+        {% if not hay_personal %}
+        <div class="alert alert-warning d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <span>Para formar una cuadrilla primero debes registrar trabajadores o jefes de cuadrilla.</span>
+            <a href="{% url 'crear_cuenta' %}" class="btn btn-warning btn-sm">Crear personal</a>
+        </div>
+        {% endif %}
+
+        <section class="card content-card mb-4" id="formulario-cuadrilla">
+            <div class="card-header bg-success text-white py-3">
+                <h2 class="h5 mb-1">{% if cuadrilla_editando %}Editar cuadrilla{% else %}Formar una cuadrilla{% endif %}</h2>
+                <p class="small mb-0 opacity-75">Los trabajadores seleccionados quedarán vinculados automáticamente a este equipo.</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% if cuadrilla_editando %}{% url 'editar_cuadrilla' cuadrilla_editando.id %}{% else %}{% url 'cuadrillas' %}{% endif %}" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'integrantes' or field.name == 'observaciones' %}col-12{% elif field.name == 'unidad_trabajo' or field.name == 'labor_actual' %}col-12 col-lg-6{% else %}col-12 col-md-6 col-lg-4{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}{% if field.field.required %}<span class="required-mark"> *</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                            {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-success" {% if not hay_personal %}disabled{% endif %}>
+                            {% if cuadrilla_editando %}Guardar cambios{% else %}Crear cuadrilla{% endif %}
+                        </button>
+                        {% if cuadrilla_editando %}
+                        <a href="{% url 'cuadrillas' %}" class="btn btn-outline-secondary">Cancelar edición</a>
+                        {% else %}
+                        <button type="reset" class="btn btn-outline-secondary">Limpiar formulario</button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="card content-card">
+            <div class="card-body p-4">
+                <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-3">
+                    <div>
+                        <h2 class="h4 mb-1">Equipos organizados</h2>
+                        <p class="text-secondary mb-0">Asignación vigente de personal y tareas.</p>
+                    </div>
+                    <form method="get" action="{% url 'cuadrillas' %}" class="d-flex gap-2" role="search">
+                        <label for="busqueda" class="visually-hidden">Buscar cuadrilla</label>
+                        <input id="busqueda" name="q" value="{{ busqueda }}" class="form-control" type="search" placeholder="Código, jefe, labor, lugar...">
+                        <button class="btn btn-outline-success" type="submit">Buscar</button>
+                        {% if busqueda %}<a class="btn btn-outline-secondary" href="{% url 'cuadrillas' %}">Limpiar</a>{% endif %}
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-success"><tr>
+                            <th>Cuadrilla</th><th>Jefatura</th><th>Integrantes</th><th>Asignación</th>
+                            <th>Turno / inicio</th><th>Estado</th><th class="text-end">Acciones</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for cuadrilla in cuadrillas %}
+                            <tr>
+                                <td><span class="badge text-bg-light border">{{ cuadrilla.codigo }}</span><div class="fw-semibold mt-1">{{ cuadrilla.nombre }}</div></td>
+                                <td>{{ cuadrilla.jefe_nombre|default:'Sin jefe asignado' }}</td>
+                                <td class="member-list">
+                                    <strong>{{ cuadrilla.cantidad_integrantes }} trabajador{{ cuadrilla.cantidad_integrantes|pluralize:'es' }}</strong>
+                                    {% if cuadrilla.integrantes_nombres %}<div class="small text-secondary">{{ cuadrilla.integrantes_nombres|join:', '|truncatechars:95 }}</div>{% endif %}
+                                </td>
+                                <td><div>{{ cuadrilla.labor_actual }}</div><div class="small text-secondary">{{ cuadrilla.unidad_etiqueta|default:'Sin lugar asignado' }}</div></td>
+                                <td>{{ cuadrilla.turno }}{% if cuadrilla.fecha_inicio %}<div class="small text-secondary">Desde {{ cuadrilla.fecha_inicio }}</div>{% endif %}</td>
+                                <td><span class="badge {% if cuadrilla.estado == 'Activa' %}text-bg-success{% elif cuadrilla.estado == 'Pausada' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ cuadrilla.estado }}</span></td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'editar_cuadrilla' cuadrilla.id %}#formulario-cuadrilla" class="btn btn-warning btn-sm">Editar</a>
+                                    <form action="{% url 'eliminar_cuadrilla' cuadrilla.id %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="¿Eliminar la cuadrilla {{ cuadrilla.nombre }}? Sus trabajadores quedarán disponibles para otra asignación.">Eliminar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="7" class="text-center py-5">
+                                <div class="fw-semibold mb-1">{% if busqueda %}No se encontraron coincidencias{% else %}Todavía no hay cuadrillas formadas{% endif %}</div>
+                                <div class="text-secondary small">{% if busqueda %}Prueba con otro nombre, labor o lugar.{% else %}Selecciona al personal y crea el primer equipo.{% endif %}</div>
+                            </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

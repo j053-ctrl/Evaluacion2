@@ -1,0 +1,14 @@
+<nav class="navbar navbar-dark bg-success">
+    <div class="container-fluid gap-2">
+        <a class="navbar-brand" href="{% url 'inicio' %}">AgroKODIT</a>
+        <div class="d-flex align-items-center gap-3">
+            <a class="text-white" href="{% url 'reportes_enviados' %}">{% if rol_acceso == 'administrador' %}Revisar reportes{% elif rol_acceso == 'cuenta_plenillera' %}Preparar reportes{% else %}Reportes publicados{% endif %}</a>
+            <span class="text-white">{{ request.user.get_full_name|default:request.user.username }}</span>
+            <span class="badge bg-light text-success">{{ nombre_rol }}</span>
+            <form method="post" action="{% url 'logout' %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-light btn-sm">Cerrar sesión</button>
+            </form>
+        </div>
+    </div>
+</nav>

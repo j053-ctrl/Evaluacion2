@@ -1,0 +1,168 @@
+{% load static %}
+<!DOCTYPE html>
+<html data-page="reportes" lang="es">
+
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - AgroKODIT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'agrokodit/css/estilos.css' %}">
+</head>
+
+<body>
+    {% include 'gestion/navbar.html' %}
+
+    <main class="container-fluid px-3 px-lg-5 py-5">
+        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-end gap-3 mb-4">
+            <div>
+                <span class="badge text-bg-success mb-2">Información consolidada</span>
+                <h1 class="mb-2">Administrador de reportes</h1>
+                <p class="text-secondary mb-0">Estado de la estructura agrícola y de los equipos de trabajo · Actualizado {{ generado_en }}</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2 no-print">
+                {% if tipo != 'resumen' %}
+                <a href="?tipo={{ tipo }}&q={{ busqueda|urlencode }}&agrupar={{ agrupar }}&desde={{ desde }}&hasta={{ hasta }}&exportar=csv" class="btn btn-success">Descargar CSV</a>
+                {% endif %}
+                <button type="button" class="btn btn-outline-success" data-print>Imprimir</button>
+                <a href="{% url 'inicio' %}" class="btn btn-outline-secondary">Volver al inicio</a>
+            </div>
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'warning' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endfor %}
+
+        <ul class="nav nav-pills report-nav flex-column flex-md-row gap-2 mb-4 no-print">
+            <li class="nav-item"><a class="nav-link {% if tipo == 'resumen' %}active{% endif %}" href="?tipo=resumen">Resumen general</a></li>
+            <li class="nav-item"><a class="nav-link {% if tipo == 'superficie' %}active{% endif %}" href="?tipo=superficie">Superficie por predio</a></li>
+            <li class="nav-item"><a class="nav-link {% if tipo == 'cultivos' %}active{% endif %}" href="?tipo=cultivos">Cultivos y variedades</a></li>
+            <li class="nav-item"><a class="nav-link {% if tipo == 'cuadrillas' %}active{% endif %}" href="?tipo=cuadrillas">Personal y cuadrillas</a></li>
+            <li class="nav-item"><a class="nav-link {% if tipo == 'produccion' %}active{% endif %}" href="?tipo=produccion">Producción y asistencia</a></li>
+        </ul>
+
+        {% if tipo != 'resumen' %}
+        <form method="get" class="card content-card card-body mb-4 no-print">
+            <input type="hidden" name="tipo" value="{{ tipo }}">
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-8 col-lg-5">
+                    <label for="busqueda" class="form-label fw-semibold">Filtrar este reporte</label>
+                    <input id="busqueda" name="q" value="{{ busqueda }}" class="form-control" placeholder="Escribe un código, nombre, estado o ubicación">
+                </div>
+                {% if tipo == 'produccion' %}
+                <div class="col-md-3"><label class="form-label fw-semibold" for="desde">Desde</label><input class="form-control" type="date" id="desde" name="desde" value="{{ desde }}"></div>
+                <div class="col-md-3"><label class="form-label fw-semibold" for="hasta">Hasta</label><input class="form-control" type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
+                <div class="col-md-3"><label class="form-label fw-semibold" for="agrupar">Agrupar por</label><select class="form-select" id="agrupar" name="agrupar"><option value="trabajador" {% if agrupar == 'trabajador' %}selected{% endif %}>Trabajador</option><option value="collera" {% if agrupar == 'collera' %}selected{% endif %}>Collera</option><option value="cuadrilla" {% if agrupar == 'cuadrilla' %}selected{% endif %}>Cuadrilla</option><option value="cuartel" {% if agrupar == 'cuartel' %}selected{% endif %}>Cuartel</option><option value="fecha" {% if agrupar == 'fecha' %}selected{% endif %}>Día</option></select></div>
+                {% endif %}
+                <div class="col-auto"><button class="btn btn-success">Aplicar filtro</button></div>
+                {% if busqueda %}<div class="col-auto"><a class="btn btn-outline-secondary" href="?tipo={{ tipo }}">Limpiar</a></div>{% endif %}
+            </div>
+        </form>
+        {% endif %}
+
+        {% if tipo == 'resumen' %}
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-xl-3"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Predios</div>
+                <div class="metric-value">{{ resumen.predios }}</div>
+                <div class="small text-secondary">{{ resumen.predios_activos }} activos · {{ resumen.superficie_predios|floatformat:2 }} ha</div>
+            </div></div></div>
+            <div class="col-6 col-xl-3"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Huertos</div>
+                <div class="metric-value">{{ resumen.huertos }}</div>
+                <div class="small text-secondary">{{ resumen.huertos_activos }} activos · {{ resumen.superficie_huertos|floatformat:2 }} ha</div>
+            </div></div></div>
+            <div class="col-6 col-xl-3"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Cuarteles</div>
+                <div class="metric-value">{{ resumen.cuarteles }}</div>
+                <div class="small text-secondary">{{ resumen.cuarteles_productivos }} productivos · {{ resumen.plantas }} plantas</div>
+            </div></div></div>
+            <div class="col-6 col-xl-3"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Cuadrillas</div>
+                <div class="metric-value">{{ resumen.cuadrillas }}</div>
+                <div class="small text-secondary">{{ resumen.cuadrillas_activas }} activas</div>
+            </div></div></div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-lg-7">
+                <section class="card content-card h-100"><div class="card-body p-4">
+                    <h2 class="h5">Uso de la superficie agrícola</h2>
+                    <p class="text-secondary">Porcentaje de la superficie total de predios asignada a huertos.</p>
+                    <div class="d-flex justify-content-between mb-2"><span>{{ resumen.superficie_huertos|floatformat:2 }} de {{ resumen.superficie_predios|floatformat:2 }} ha</span><strong>{{ resumen.ocupacion }}%</strong></div>
+                    <div class="progress mb-4" role="progressbar" aria-valuenow="{{ resumen.ocupacion }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar bg-success" style="width: {% if resumen.ocupacion > 100 %}100{% else %}{{ resumen.ocupacion|stringformat:'s' }}{% endif %}%"></div>
+                    </div>
+                    <a href="?tipo=superficie" class="btn btn-outline-success no-print">Ver detalle por predio</a>
+                </div></section>
+            </div>
+            <div class="col-12 col-lg-5">
+                <section class="card content-card h-100"><div class="card-body p-4">
+                    <h2 class="h5">Asignación de personal</h2>
+                    <p class="text-secondary mb-3">Trabajadores con código de cuadrilla en su ficha.</p>
+                    <div class="display-6 text-success fw-bold">{{ resumen.personal_asignado }} / {{ resumen.personal }}</div>
+                    <div class="small text-secondary mb-4">personas asignadas</div>
+                    <a href="?tipo=cuadrillas" class="btn btn-outline-success no-print">Ver equipos</a>
+                </div></section>
+            </div>
+        </div>
+        <div class="alert alert-success mt-4 mb-0">{{ resumen.jornadas }} jornadas registradas, {{ resumen.kilos|floatformat:2 }} kg cosechados y {{ resumen.horas|floatformat:2 }} horas trabajadas.</div>
+
+        {% elif tipo == 'superficie' %}
+        <section class="card content-card"><div class="card-body p-4">
+            <h2 class="h4 mb-3">Superficie y ocupación por predio</h2>
+            <div class="table-responsive"><table class="table table-hover mb-0">
+                <thead class="table-success"><tr><th>Predio</th><th>Comuna</th><th>Estado</th><th>Superficie</th><th>Asignada</th><th>Disponible</th><th>Ocupación</th><th>Estructura</th><th>Plantas</th></tr></thead>
+                <tbody>{% for fila in filas_superficie %}<tr>
+                    <td><span class="badge text-bg-light border">{{ fila.codigo }}</span><div class="fw-semibold">{{ fila.nombre }}</div></td>
+                    <td>{{ fila.comuna|default:'Sin indicar' }}</td>
+                    <td><span class="badge {% if fila.estado == 'Activo' %}text-bg-success{% else %}text-bg-secondary{% endif %}">{{ fila.estado }}</span></td>
+                    <td>{{ fila.superficie|floatformat:2 }} ha</td><td>{{ fila.superficie_asignada|floatformat:2 }} ha</td><td>{{ fila.superficie_disponible|floatformat:2 }} ha</td>
+                    <td><strong>{{ fila.ocupacion }}%</strong><div class="progress"><div class="progress-bar bg-success" style="width:{% if fila.ocupacion > 100 %}100{% else %}{{ fila.ocupacion|stringformat:'s' }}{% endif %}%"></div></div></td>
+                    <td>{{ fila.huertos }} huertos<div class="small text-secondary">{{ fila.cuarteles }} cuarteles</div></td><td>{{ fila.plantas }}</td>
+                </tr>{% empty %}<tr><td colspan="9" class="text-center py-5">No hay predios que coincidan con el filtro.</td></tr>{% endfor %}</tbody>
+            </table></div>
+        </div></section>
+
+        {% elif tipo == 'cultivos' %}
+        <section class="card content-card"><div class="card-body p-4">
+            <h2 class="h4 mb-3">Distribución por cultivo y variedad</h2>
+            <div class="table-responsive"><table class="table table-hover mb-0">
+                <thead class="table-success"><tr><th>Especie</th><th>Variedad</th><th>Huertos</th><th>Superficie</th><th>Cuarteles</th><th>Plantas registradas</th></tr></thead>
+                <tbody>{% for fila in filas_cultivos %}<tr><td class="fw-semibold">{{ fila.especie }}</td><td>{{ fila.variedad }}</td><td>{{ fila.huertos }}</td><td>{{ fila.superficie|floatformat:2 }} ha</td><td>{{ fila.cuarteles }}</td><td>{{ fila.plantas }}</td></tr>
+                {% empty %}<tr><td colspan="6" class="text-center py-5">No hay cultivos que coincidan con el filtro.</td></tr>{% endfor %}</tbody>
+            </table></div>
+        </div></section>
+
+        {% elif tipo == 'produccion' %}
+        <section class="card content-card"><div class="card-body p-4">
+            <h2 class="h4 mb-3">Producción y asistencia por {{ etiqueta_agrupacion|lower }}</h2>
+            <div class="table-responsive"><table class="table table-hover mb-0">
+                <thead class="table-success"><tr><th>{{ etiqueta_agrupacion }}</th><th>Registros</th><th>Asistencias</th><th>Horas</th><th>Kilos</th><th>Pérdidas</th><th>Kg/hora</th><th>Validados</th></tr></thead>
+                <tbody>{% for fila in filas_produccion %}<tr><td class="fw-semibold">{{ fila.grupo }}</td><td>{{ fila.registros }}</td><td>{{ fila.presentes }}</td><td>{{ fila.horas|floatformat:2 }}</td><td>{{ fila.kilos|floatformat:2 }}</td><td>{{ fila.perdidas|floatformat:2 }}</td><td>{{ fila.rendimiento|floatformat:2 }}</td><td>{{ fila.validados }}</td></tr>{% empty %}<tr><td colspan="8" class="text-center py-5">No hay producción que coincida con los filtros.</td></tr>{% endfor %}</tbody>
+            </table></div>
+        </div></section>
+
+        {% else %}
+        <section class="card content-card"><div class="card-body p-4">
+            <h2 class="h4 mb-3">Asignación de cuadrillas</h2>
+            <div class="table-responsive"><table class="table table-hover mb-0">
+                <thead class="table-success"><tr><th>Cuadrilla</th><th>Jefe</th><th>Integrantes</th><th>Labor</th><th>Lugar</th><th>Turno</th><th>Estado</th></tr></thead>
+                <tbody>{% for fila in filas_cuadrillas %}<tr>
+                    <td><span class="badge text-bg-light border">{{ fila.codigo }}</span><div class="fw-semibold">{{ fila.nombre }}</div></td><td>{{ fila.jefe }}</td><td>{{ fila.integrantes }}</td><td>{{ fila.labor }}</td><td>{{ fila.lugar }}</td><td>{{ fila.turno }}</td>
+                    <td><span class="badge {% if fila.estado == 'Activa' %}text-bg-success{% elif fila.estado == 'Pausada' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ fila.estado }}</span></td>
+                </tr>{% empty %}<tr><td colspan="7" class="text-center py-5">No hay cuadrillas que coincidan con el filtro.</td></tr>{% endfor %}</tbody>
+            </table></div>
+        </div></section>
+        {% endif %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

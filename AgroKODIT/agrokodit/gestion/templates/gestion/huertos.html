@@ -1,0 +1,176 @@
+{% load static %}
+<!DOCTYPE html>
+<html data-page="huertos" lang="es">
+
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huertos - AgroKODIT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'agrokodit/css/estilos.css' %}">
+</head>
+
+<body>
+    {% include 'gestion/navbar.html' %}
+
+    <main class="container py-5">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+            <div class="page-heading">
+                <span class="badge text-bg-success mb-2">Estructura agrícola</span>
+                <h1 class="mb-2">Gestión de huertos</h1>
+                <p class="text-secondary mb-0">Organiza las unidades productivas de cada predio, sus cultivos, superficies y sistemas de riego.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'predios' %}" class="btn btn-outline-success">Administrar predios</a>
+                <a href="{% url 'inicio' %}" class="btn btn-outline-secondary">Volver al inicio</a>
+            </div>
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endfor %}
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="card summary-card h-100"><div class="card-body">
+                    <div class="text-secondary small text-uppercase fw-semibold">Huertos mostrados</div>
+                    <div class="summary-value">{{ total_huertos }}</div>
+                </div></div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card summary-card h-100"><div class="card-body">
+                    <div class="text-secondary small text-uppercase fw-semibold">Huertos activos</div>
+                    <div class="summary-value">{{ huertos_activos }}</div>
+                </div></div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card summary-card h-100"><div class="card-body">
+                    <div class="text-secondary small text-uppercase fw-semibold">Superficie mostrada</div>
+                    <div class="summary-value">{{ superficie_total|floatformat:2 }} <small class="fs-6">ha</small></div>
+                </div></div>
+            </div>
+        </div>
+
+        {% if not hay_predios %}
+        <div class="alert alert-warning d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <span>Para registrar un huerto primero debes crear al menos un predio.</span>
+            <a href="{% url 'predios' %}#formulario-predio" class="btn btn-warning btn-sm">Crear predio</a>
+        </div>
+        {% endif %}
+
+        <section class="card content-card mb-4" id="formulario-huerto">
+            <div class="card-header bg-success text-white py-3">
+                <h2 class="h5 mb-1">{% if huerto_editando %}Editar huerto{% else %}Registrar un huerto{% endif %}</h2>
+                <p class="small mb-0 opacity-75">Los campos marcados con * son obligatorios.</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% if huerto_editando %}{% url 'editar_huerto' huerto_editando.id %}{% else %}{% url 'huertos' %}{% endif %}" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'observaciones' %}col-12{% else %}col-12 col-md-6 col-lg-4{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}{% if field.field.required %}<span class="required-mark"> *</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                            {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-success" {% if not hay_predios %}disabled{% endif %}>
+                            {% if huerto_editando %}Guardar cambios{% else %}Registrar huerto{% endif %}
+                        </button>
+                        {% if huerto_editando %}
+                        <a href="{% url 'huertos' %}" class="btn btn-outline-secondary">Cancelar edición</a>
+                        {% else %}
+                        <button type="reset" class="btn btn-outline-secondary">Limpiar formulario</button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="card content-card">
+            <div class="card-body p-4">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
+                    <div>
+                        <h2 class="h4 mb-1">Huertos registrados</h2>
+                        <p class="text-secondary mb-0">Consulta la distribución productiva de los predios.</p>
+                    </div>
+                    <form method="get" action="{% url 'huertos' %}" class="d-flex gap-2" role="search">
+                        <label for="busqueda" class="visually-hidden">Buscar huerto</label>
+                        <input id="busqueda" name="q" value="{{ busqueda }}" class="form-control" type="search" placeholder="Código, cultivo, predio...">
+                        <button class="btn btn-outline-success" type="submit">Buscar</button>
+                        {% if busqueda %}<a class="btn btn-outline-secondary" href="{% url 'huertos' %}">Limpiar</a>{% endif %}
+                    </form>
+                </div>
+
+                {% if busqueda %}<p class="small text-secondary">Resultados para “{{ busqueda }}”.</p>{% endif %}
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-success">
+                            <tr>
+                                <th scope="col">Código</th>
+                                <th scope="col">Huerto</th>
+                                <th scope="col">Predio</th>
+                                <th scope="col">Cultivo</th>
+                                <th scope="col">Superficie</th>
+                                <th scope="col">Plantación</th>
+                                <th scope="col">Riego</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col" class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for huerto in huertos %}
+                            <tr>
+                                <td><span class="badge text-bg-light border">{{ huerto.codigo }}</span></td>
+                                <td>
+                                    <strong>{{ huerto.nombre }}</strong>
+                                    {% if huerto.observaciones %}<div class="small text-secondary observations">{{ huerto.observaciones|truncatechars:70 }}</div>{% endif %}
+                                </td>
+                                <td>
+                                    {{ huerto.predio_nombre|default:'Predio no disponible' }}
+                                    {% if huerto.predio_codigo %}<div class="small text-secondary">{{ huerto.predio_codigo }}</div>{% endif %}
+                                </td>
+                                <td>{{ huerto.especie }}{% if huerto.variedad %}<div class="small text-secondary">{{ huerto.variedad }}</div>{% endif %}</td>
+                                <td class="text-nowrap">{{ huerto.superficie_hectareas|floatformat:2 }} ha</td>
+                                <td>{{ huerto.anio_plantacion|default:'Sin indicar' }}</td>
+                                <td>{{ huerto.sistema_riego }}</td>
+                                <td><span class="badge {% if huerto.estado == 'Activo' %}text-bg-success{% elif huerto.estado == 'En formación' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ huerto.estado|default:'Sin estado' }}</span></td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'editar_huerto' huerto.id %}#formulario-huerto" class="btn btn-warning btn-sm">Editar</a>
+                                    <form action="{% url 'eliminar_huerto' huerto.id %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="¿Eliminar el huerto {{ huerto.nombre }}? Esta acción no se puede deshacer.">Eliminar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <div class="fw-semibold mb-1">{% if busqueda %}No se encontraron coincidencias{% else %}Todavía no hay huertos registrados{% endif %}</div>
+                                    <div class="text-secondary small">{% if busqueda %}Prueba con otro código, cultivo o predio.{% else %}Completa el formulario para agregar el primero.{% endif %}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>

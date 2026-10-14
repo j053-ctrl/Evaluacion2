@@ -1,0 +1,189 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Trabajadores - AgroKODIT</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+    <link rel="stylesheet" href="{% static 'agrokodit/css/estilos.css' %}">
+</head>
+
+<body>
+
+    {% include 'gestion/navbar.html' %}
+
+    <div class="container mt-5">
+
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>{% if rol == 'administrador' or rol == 'jefe' or rol == 'gerencia' or rol == 'cuenta_plenillera' %}Trabajadores{% else %}Mis datos{% endif %}</h1>
+
+            {% if request.user.is_superuser %}
+            <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'crear_cuenta' %}" class="btn btn-success">Crear cuenta</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <p class="mt-3">
+            {% if request.user.is_superuser %}Administración de trabajadores de la empresa agrícola.
+            {% elif rol == 'jefe' %}Consulta de trabajadores registrados. Solo el administrador modifica las fichas del personal.
+            {% elif rol == 'gerencia' %}Consulta del personal y edición de sus códigos de cuadrilla y collera.
+            {% else %}Consulta de tu ficha personal. Tu cuenta tiene acceso de solo lectura.{% endif %}
+        </p>
+
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}" role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+
+        {% if rol == 'administrador' %}
+        <section class="card border-success shadow-sm mt-4" aria-labelledby="asignar-pago-titulo">
+            <div class="card-body">
+                <h2 id="asignar-pago-titulo" class="h5 card-title">Asignar pago del día</h2>
+                <p class="text-muted">Selecciona un trabajador e ingresa cuánto ganará durante la jornada.</p>
+                <form method="post" class="row g-3 align-items-end">
+                    {% csrf_token %}
+                    <div class="col-12 col-md-6">
+                        <label for="trabajador_id" class="form-label">Trabajador o rol</label>
+                        <select id="trabajador_id" name="trabajador_id" class="form-select" required>
+                            <option value="">Seleccionar trabajador o rol</option>
+                            <optgroup label="Asignar el mismo monto por rol">
+                                <option value="rol_trabajador">Trabajador</option>
+                                <option value="rol_gerencia">Gerencia</option>
+                                <option value="rol_jefe">Jefe de Cuadrilla</option>
+                                <option value="rol_planillera">Planillera</option>
+                                <option value="rol_recursos_humanos">Recursos Humanos</option>
+                            </optgroup>
+                            <optgroup label="Asignar a una persona">
+                            {% for trabajador in trabajadores %}
+                            <option value="{{ trabajador.id }}">
+                                {{ trabajador.nombre }} {{ trabajador.apellido }} — {{ trabajador.rol }} — {{ trabajador.rut }}
+                            </option>
+                            {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label for="ganancia_dia" class="form-label">Pago del día</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input id="ganancia_dia" name="ganancia_dia" type="number"
+                                   class="form-control" min="0" step="1" required>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-2 d-grid">
+                        <button type="submit" class="btn btn-success">Guardar pago</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="table-responsive">
+        <table class="table table-bordered table-striped mt-4">
+
+            <thead class="table-success">
+                <tr>
+                    <th>RUT</th>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Rol</th>
+                    {% if rol == 'administrador' or rol == 'jefe' %}
+                    <th>Ganancia del día</th>
+                    {% endif %}
+                    {% if request.user.is_superuser %}
+                    <th>Cuenta</th>
+                    <th>Contraseña</th>
+                    {% endif %}
+                    {% if puede_editar %}
+                    <th>Acciones</th>
+                    {% endif %}
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for trabajador in trabajadores %}
+
+                <tr>
+                    <td>{{ trabajador.rut }}</td>
+                    <td>{{ trabajador.nombre }}</td>
+                    <td>{{ trabajador.apellido }}</td>
+                    <td>{{ trabajador.rol }}</td>
+                    {% if rol == 'administrador' or rol == 'jefe' %}
+                    <td class="fw-semibold">$ {{ trabajador.ganancia_dia|floatformat:0 }}</td>
+                    {% endif %}
+
+                    {% if request.user.is_superuser %}
+                    <td>{{ trabajador.cuenta|default:'Sin cuenta' }}</td>
+                    <td>{% if trabajador.password_configurada %}Configurada{% else %}Sin configurar{% endif %}</td>
+                    {% endif %}
+                    {% if puede_editar %}
+                    <td>
+                        <small class="d-block text-muted">ID: {{ trabajador.id }}</small>
+                        {% if trabajador.sin_ficha %}
+                        <span class="d-block text-warning">Cuenta existente sin ficha de trabajador.</span>
+                        <a href="{% url 'admin:gestion_perfilusuario_change' trabajador.perfil_id %}" class="btn btn-warning btn-sm">
+                            Editar
+                        </a>
+                        {% else %}
+                        <a href="{% url 'editar_trabajador' trabajador.id %}" class="btn btn-warning btn-sm">
+                            {% if rol == 'gerencia' %}Editar códigos{% else %}Editar{% endif %}
+                        </a>
+                        {% endif %}
+
+                        {% if request.user.is_superuser %}
+                        <form action="{% url 'eliminar_trabajador' trabajador.id %}" method="POST" data-style="inline-trabajadores-9">
+                            {% csrf_token %}
+
+                            <button
+                                type="submit"
+                                class="btn btn-danger btn-sm"
+                                data-confirm="¿Eliminar el trabajador y su cuenta de acceso? Su RUT quedará disponible para crear una cuenta nueva.">
+                                Eliminar
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                    <td colspan="{% if request.user.is_superuser %}8{% elif rol == 'jefe' %}5{% else %}4{% endif %}" class="text-center">
+                        {% if rol == 'administrador' %}No hay trabajadores registrados.
+                        {% else %}No hay datos vinculados a tu cuenta. Solicita al administrador que revise tu asignación.{% endif %}
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+        </div>
+
+        <a href="{% url 'inicio' %}" class="btn btn-secondary">
+            Volver al inicio
+        </a>
+
+    </div>
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    <script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+
+</html>

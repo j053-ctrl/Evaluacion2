@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html data-page="cuarteles" lang="es">
+
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuarteles - AgroKODIT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'agrokodit/css/estilos.css' %}">
+</head>
+
+<body>
+    {% include 'gestion/navbar.html' %}
+
+    <main class="container-fluid px-3 px-lg-5 py-5">
+        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-end gap-3 mb-4">
+            <div class="page-heading">
+                <span class="badge text-bg-success mb-2">Planificación productiva</span>
+                <h1 class="mb-2">Gestión de cuarteles</h1>
+                <p class="text-secondary mb-0">Divide cada huerto en sectores operativos y controla su superficie, hileras, plantas, marco de plantación y riego.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'huertos' %}" class="btn btn-outline-success">Administrar huertos</a>
+                <a href="{% url 'inicio' %}" class="btn btn-outline-secondary">Volver al inicio</a>
+            </div>
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endfor %}
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-xl-3"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Cuarteles mostrados</div>
+                <div class="metric-value">{{ total_cuarteles }}</div>
+            </div></div></div>
+            <div class="col-6 col-xl-3"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Productivos</div>
+                <div class="metric-value">{{ cuarteles_productivos }}</div>
+            </div></div></div>
+            <div class="col-6 col-xl-3"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Superficie asignada</div>
+                <div class="metric-value">{{ superficie_total|floatformat:2 }} <small class="fs-6">ha</small></div>
+            </div></div></div>
+            <div class="col-6 col-xl-3"><div class="card metric h-100"><div class="card-body">
+                <div class="small text-secondary text-uppercase fw-semibold">Plantas registradas</div>
+                <div class="metric-value">{{ total_plantas }}</div>
+            </div></div></div>
+        </div>
+
+        {% if not hay_huertos %}
+        <div class="alert alert-warning d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <span>Para crear un cuartel primero debes registrar un huerto.</span>
+            <a href="{% url 'huertos' %}#formulario-huerto" class="btn btn-warning btn-sm">Crear huerto</a>
+        </div>
+        {% endif %}
+
+        <section class="card content-card mb-4" id="formulario-cuartel">
+            <div class="card-header bg-success text-white py-3">
+                <h2 class="h5 mb-1">{% if cuartel_editando %}Editar configuración del cuartel{% else %}Registrar un cuartel{% endif %}</h2>
+                <p class="small mb-0 opacity-75">La superficie se descuenta de la capacidad disponible del huerto seleccionado.</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% if cuartel_editando %}{% url 'editar_cuartel' cuartel_editando.id %}{% else %}{% url 'cuarteles' %}{% endif %}" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'observaciones' %}col-12{% elif field.name == 'huerto_id' %}col-12 col-lg-6{% else %}col-12 col-md-6 col-lg-3{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}{% if field.field.required %}<span class="required-mark"> *</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                            {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-success" {% if not hay_huertos %}disabled{% endif %}>
+                            {% if cuartel_editando %}Guardar cambios{% else %}Registrar cuartel{% endif %}
+                        </button>
+                        {% if cuartel_editando %}
+                        <a href="{% url 'cuarteles' %}" class="btn btn-outline-secondary">Cancelar edición</a>
+                        {% else %}
+                        <button type="reset" class="btn btn-outline-secondary">Limpiar formulario</button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="card content-card">
+            <div class="card-body p-4">
+                <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-3">
+                    <div>
+                        <h2 class="h4 mb-1">Distribución de cuarteles</h2>
+                        <p class="text-secondary mb-0">Información técnica y operativa de cada sector.</p>
+                    </div>
+                    <form method="get" action="{% url 'cuarteles' %}" class="d-flex gap-2" role="search">
+                        <label for="busqueda" class="visually-hidden">Buscar cuartel</label>
+                        <input id="busqueda" name="q" value="{{ busqueda }}" class="form-control" type="search" placeholder="Cuartel, huerto, cultivo...">
+                        <button class="btn btn-outline-success" type="submit">Buscar</button>
+                        {% if busqueda %}<a class="btn btn-outline-secondary" href="{% url 'cuarteles' %}">Limpiar</a>{% endif %}
+                    </form>
+                </div>
+
+                {% if busqueda %}<p class="small text-secondary">Resultados para “{{ busqueda }}”.</p>{% endif %}
+
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-success">
+                            <tr>
+                                <th>Código / cuartel</th>
+                                <th>Ubicación productiva</th>
+                                <th>Superficie</th>
+                                <th>Plantación</th>
+                                <th>Marco</th>
+                                <th>Riego</th>
+                                <th>Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cuartel in cuarteles %}
+                            <tr>
+                                <td>
+                                    <span class="badge text-bg-light border mb-1">{{ cuartel.codigo }}</span>
+                                    <div class="fw-semibold">{{ cuartel.nombre }}</div>
+                                </td>
+                                <td>
+                                    <div>{{ cuartel.huerto_nombre|default:'Huerto no disponible' }}</div>
+                                    <div class="detail">{{ cuartel.predio_nombre }}{% if cuartel.especie %} · {{ cuartel.especie }}{% endif %}{% if cuartel.variedad %} {{ cuartel.variedad }}{% endif %}</div>
+                                </td>
+                                <td>
+                                    <div>{{ cuartel.superficie_hectareas|floatformat:2 }} ha</div>
+                                    <div class="detail">{{ cuartel.densidad_plantas }} plantas/ha</div>
+                                </td>
+                                <td>
+                                    <div>{{ cuartel.numero_plantas }} plantas</div>
+                                    <div class="detail">{{ cuartel.numero_hileras }} hileras{% if cuartel.portainjerto %} · {{ cuartel.portainjerto }}{% endif %}</div>
+                                </td>
+                                <td class="text-nowrap">
+                                    {{ cuartel.distancia_hileras_m|floatformat:2 }} × {{ cuartel.distancia_plantas_m|floatformat:2 }} m
+                                </td>
+                                <td>{{ cuartel.sector_riego|default:'Sin asignar' }}</td>
+                                <td>
+                                    <span class="badge {% if cuartel.estado == 'Productivo' %}text-bg-success{% elif cuartel.estado == 'Inactivo' %}text-bg-secondary{% else %}text-bg-warning{% endif %}">{{ cuartel.estado|default:'Sin estado' }}</span>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'editar_cuartel' cuartel.id %}#formulario-cuartel" class="btn btn-warning btn-sm">Editar</a>
+                                    <form action="{% url 'eliminar_cuartel' cuartel.id %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="¿Eliminar el cuartel {{ cuartel.nombre }}? Esta acción no se puede deshacer.">Eliminar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="8" class="text-center py-5">
+                                <div class="fw-semibold mb-1">{% if busqueda %}No se encontraron coincidencias{% else %}Todavía no hay cuarteles registrados{% endif %}</div>
+                                <div class="text-secondary small">{% if busqueda %}Prueba con otro código, huerto, predio o cultivo.{% else %}Registra el primer sector productivo desde el formulario.{% endif %}</div>
+                            </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'agrokodit/js/app.js' %}" defer></script>
+</body>
+</html>
